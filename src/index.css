@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+/* Look: blue-ballpoint ink on cool notebook paper. Attendance states use highlighter-pen colours. */
+@theme {
+  --font-sans: "Atkinson Hyperlegible", ui-sans-serif, system-ui, sans-serif;
+  --font-slab: "Zilla Slab", Rockwell, "Roboto Slab", Georgia, serif;
+  --color-paper: #F4F6FA;
+  --color-ink: #16192B;
+  --color-pen: #2545C8;
+  --color-rule: #D5DCEB;
+  --color-mark-green: #A8E6BC;
+  --color-mark-yellow: #FBE76B;
+  --color-mark-red: #FFB8B0;
+}
+
+@layer base {
+  body { @apply bg-paper font-sans text-ink antialiased; }
+  h1, h2, h3 { @apply font-slab; }
+}
