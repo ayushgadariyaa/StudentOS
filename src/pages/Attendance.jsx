@@ -6,13 +6,19 @@ import { attendanceStats, advice } from '../lib/attendance'
 import { field } from '../lib/ui'
 import Percent from '../components/Percent'
 import Problem from '../components/Problem'
+import StartingNumbers from '../components/StartingNumbers'
 
 export default function Attendance({ user }) {
+  // Totals (starting numbers + everything you marked) come from the attendance_summary view in the database.
   const summary = useQuery(() => supabase.from('attendance_summary').select('*').order('name'))
+  // The starting numbers themselves live on each subject, so they can be edited from here.
+  const subjects = useQuery(() =>
+    supabase.from('subjects').select('id, initial_attended, initial_conducted').eq('archived', false),
+  )
   const profile = useQuery(() =>
     supabase.from('profiles').select('attendance_target, attendance_warn_margin').maybeSingle(),
   )
-  const [draft, setDraft] = useState(null) // what's typed in the target box before it's saved
+  const [draft, setDraft] = useState(null) // what is typed in the minimum-% box before it is saved
   const [error, setError] = useState(null)
 
   const saved = profile.data?.attendance_target ?? 75
@@ -28,6 +34,7 @@ export default function Attendance({ user }) {
   }
 
   const rows = summary.data ?? []
+  const starting = new Map((subjects.data ?? []).map((s) => [s.id, s]))
   return (
     <>
       <h1 className="text-3xl font-bold">Attendance</h1>
@@ -61,7 +68,7 @@ export default function Attendance({ user }) {
         {rows.map((s) => {
           const stats = attendanceStats(s.attended, s.conducted, target, margin)
           return (
-            <li key={s.subject_id} className="flex items-center gap-4 py-4">
+            <li key={s.subject_id} className="flex items-start gap-4 py-4">
               <Percent value={stats.pct} state={stats.state} className="w-24 text-2xl" />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-bold">{s.name}</p>
@@ -69,6 +76,17 @@ export default function Attendance({ user }) {
                   {s.attended} of {s.conducted} classes attended
                 </p>
                 <p className="mt-1 text-sm">{advice(stats, target)}</p>
+                {starting.has(s.subject_id) && (
+                  <div className="mt-1">
+                    <StartingNumbers
+                      subject={starting.get(s.subject_id)}
+                      onSaved={() => {
+                        summary.reload()
+                        subjects.reload()
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             </li>
           )

@@ -1,12 +1,12 @@
-const MARK = { safe: 'bg-mark-green', warning: 'bg-mark-yellow', danger: 'bg-mark-red', none: 'bg-ink/10' }
+import Mark from './Mark'
 
-// The one loud element in the app: a percentage that looks swiped with a highlighter.
+const TONE = { safe: 'good', warning: 'warn', danger: 'bad', none: 'quiet' }
+
+// An attendance percentage, highlighted green, yellow or red depending on the state from attendanceStats().
 export default function Percent({ value, state, className = '' }) {
   return (
-    <span
-      className={`inline-block -rotate-1 rounded-[3px_9px_4px_8px] px-2 py-0.5 text-center font-slab font-bold tabular-nums ${MARK[state]} ${className}`}
-    >
+    <Mark tone={TONE[state]} className={className}>
       {value == null ? '–' : `${Number(value.toFixed(1))}%`}
-    </span>
+    </Mark>
   )
 }

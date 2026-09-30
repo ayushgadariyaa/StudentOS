@@ -6,6 +6,7 @@ import { attendanceStats, advice } from '../lib/attendance'
 import { isoWeekday, localDate, fmtTime, hm } from '../lib/dates'
 import Percent from '../components/Percent'
 import Problem from '../components/Problem'
+import ComingUp from '../components/ComingUp'
 
 const MARKS = [
   ['present', 'Present', 'bg-mark-green'],
@@ -118,6 +119,8 @@ export default function Today() {
           )
         })}
       </ul>
+
+      <ComingUp />
 
       {flagged.length > 0 && (
         <section className="mt-10">

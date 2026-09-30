@@ -2,37 +2,53 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useQuery } from '../lib/hooks'
-import { DAYS, fmtTime } from '../lib/dates'
-import { field, btn, btnQuiet, label } from '../lib/ui'
+import { DAYS, fmtTime, toMinutes, addMinutes } from '../lib/dates'
+import { field, btn, btnQuiet } from '../lib/ui'
+import DayChips from '../components/DayChips'
+import Field from '../components/Field'
 import Problem from '../components/Problem'
+import TimetableShare from '../components/TimetableShare'
 
-const EMPTY = { subject_id: '', day_of_week: '1', start_time: '09:00', end_time: '10:00', room: '', building: '', professor: '' }
+const EMPTY = { subject_id: '', days: [], start: '09:00', end: '10:00', room: '', building: '', professor: '' }
 const place = (r) => [r.room, r.building, r.professor].filter(Boolean).join(', ')
 
 export default function Timetable() {
-  const subjects = useQuery(() => supabase.from('subjects').select('id, name').eq('archived', false).order('name'))
+  const subjects = useQuery(() => supabase.from('subjects').select('id, name, code, color').eq('archived', false).order('name'))
   const entries = useQuery(() => supabase.from('timetable_entries').select('*, subjects(name, color)').order('start_time'))
   const [form, setForm] = useState(EMPTY)
   const [error, setError] = useState(null)
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value })
 
+  // Changing the start time moves the end time too, so a class keeps its length.
+  function setStart(e) {
+    const start = e.target.value
+    const length = Math.max(toMinutes(form.end) - toMinutes(form.start), 0) || 60
+    setForm({ ...form, start, end: start ? addMinutes(start, length) : form.end })
+  }
+
   async function add(e) {
     e.preventDefault()
-    if (form.end_time <= form.start_time) return setError({ message: 'The end time has to be after the start time.' })
-    const { error } = await supabase.from('timetable_entries').insert({
+    if (form.days.length === 0) return setError({ message: 'Pick at least one day.' })
+    if (form.end <= form.start) return setError({ message: 'The end time has to be after the start time.' })
+
+    // One row per selected day, all sent in a single request.
+    const rows = form.days.map((day) => ({
       subject_id: form.subject_id,
-      day_of_week: Number(form.day_of_week),
-      start_time: form.start_time,
-      end_time: form.end_time,
+      day_of_week: day,
+      start_time: form.start,
+      end_time: form.end,
       room: form.room.trim() || null,
       building: form.building.trim() || null,
       professor: form.professor.trim() || null,
-    })
+    }))
+    const { error } = await supabase.from('timetable_entries').insert(rows)
     setError(error)
-    if (!error) {
-      setForm({ ...EMPTY, day_of_week: form.day_of_week }) // keep the day, so a whole day is quick to enter
-      entries.reload()
-    }
+    if (error) return
+
+    // Get ready for the next class: keep the days, move the time on, clear the rest.
+    const length = toMinutes(form.end) - toMinutes(form.start)
+    setForm({ ...EMPTY, days: form.days, start: form.end, end: addMinutes(form.end, length) })
+    entries.reload()
   }
 
   async function remove(id) {
@@ -57,51 +73,50 @@ export default function Timetable() {
         <details open className="mt-6 border-y border-rule py-3">
           <summary className="cursor-pointer font-bold text-pen">Add a class</summary>
           <form onSubmit={add} className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <label className={label} htmlFor="subject">Subject</label>
+            <Field label="Subject" htmlFor="subject" className="sm:col-span-2">
               <select id="subject" required className={field} value={form.subject_id} onChange={set('subject_id')}>
                 <option value="" disabled>Choose a subject</option>
                 {subjectList.map((s) => (
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
               </select>
-            </div>
-            <div>
-              <label className={label} htmlFor="day">Day</label>
-              <select id="day" className={field} value={form.day_of_week} onChange={set('day_of_week')}>
-                {DAYS.map((d, i) => (
-                  <option key={d} value={i + 1}>{d}</option>
-                ))}
-              </select>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={label} htmlFor="start">Starts</label>
-                <input id="start" type="time" required className={field} value={form.start_time} onChange={set('start_time')} />
-              </div>
-              <div>
-                <label className={label} htmlFor="end">Ends</label>
-                <input id="end" type="time" required className={field} value={form.end_time} onChange={set('end_time')} />
-              </div>
-            </div>
-            <div>
-              <label className={label} htmlFor="room">Room (optional)</label>
+            </Field>
+            <Field label="Days (pick every day this class happens)" className="sm:col-span-2">
+              <DayChips value={form.days} onChange={(days) => setForm({ ...form, days })} />
+            </Field>
+            <Field label="Starts" htmlFor="start">
+              <input id="start" type="time" required className={field} value={form.start} onChange={setStart} />
+            </Field>
+            <Field label="Ends" htmlFor="end">
+              <input id="end" type="time" required className={field} value={form.end} onChange={set('end')} />
+            </Field>
+            <Field label="Room (optional)" htmlFor="room">
               <input id="room" className={field} value={form.room} onChange={set('room')} />
-            </div>
-            <div>
-              <label className={label} htmlFor="building">Building (optional)</label>
+            </Field>
+            <Field label="Building (optional)" htmlFor="building">
               <input id="building" className={field} value={form.building} onChange={set('building')} />
-            </div>
-            <div className="sm:col-span-2">
-              <label className={label} htmlFor="professor">Professor (optional)</label>
+            </Field>
+            <Field label="Professor (optional)" htmlFor="professor" className="sm:col-span-2">
               <input id="professor" className={field} value={form.professor} onChange={set('professor')} />
-            </div>
+            </Field>
             <div className="sm:col-span-2">
               <button className={btn}>Add class</button>
             </div>
           </form>
         </details>
       )}
+
+      <details className="border-b border-rule py-3">
+        <summary className="cursor-pointer font-bold text-pen">Share or import a timetable</summary>
+        <TimetableShare
+          subjects={subjectList}
+          entries={rows}
+          onImported={() => {
+            subjects.reload()
+            entries.reload()
+          }}
+        />
+      </details>
 
       <Problem error={error ?? entries.error ?? subjects.error} />
 
@@ -123,7 +138,9 @@ export default function Timetable() {
                       {place(r) && <span className="text-ink/70">, {place(r)}</span>}
                     </p>
                   </div>
-                  <button className={btnQuiet} onClick={() => remove(r.id)}>Remove</button>
+                  <button className={btnQuiet} onClick={() => remove(r.id)}>
+                    Remove
+                  </button>
                 </li>
               ))}
             </ul>
