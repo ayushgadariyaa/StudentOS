@@ -2,7 +2,7 @@
 
 Change `[ ]` to `[x]` when a feature is done. Updated 30 September 2026.
 
-**30 of 74 items built.** Built means the code is in the project. It does not mean tested: every screen still needs trying on a real phone with real data.
+**32 of 75 items built.** Built means the code is in the project. It does not mean tested: every screen still needs trying on a real phone with real data.
 
 ## Foundation and setup
 
@@ -11,8 +11,9 @@ Change `[ ]` to `[x]` when a feature is done. Updated 30 September 2026.
 - [x] Database changes saved as numbered files in supabase/migrations
 - [x] README, Code Tour and tests for the attendance maths (npm test)
 - [x] Vercel config so page refreshes work
-- [ ] Deploy to Vercel and share the link with friends
-- [ ] Installable on the home screen (PWA: icon and install prompt)
+- [x] Deploy to Vercel
+- [ ] Share the link with friends and watch how they use it
+- [x] Installable on the home screen (PWA: icon and install prompt)
 - [ ] Faster first load (split the code into smaller chunks)
 
 ## Accounts and profile
