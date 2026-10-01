@@ -59,7 +59,7 @@ export default function ClassForm({ subjects, onAdded }) {
     setProfessor('')
     setBuilding('')
     setSlots([newSlot({ days: last.days, start: last.end, end: addMinutes(last.end, minutesLong(last)) })])
-    onAdded()
+    onAdded(rows.length)
   }
 
   return (
