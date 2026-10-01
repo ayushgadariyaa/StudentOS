@@ -2,7 +2,7 @@
 
 Change `[ ]` to `[x]` when a feature is done. Updated 30 September 2026.
 
-**32 of 75 items built.** Built means the code is in the project. It does not mean tested: every screen still needs trying on a real phone with real data.
+**36 of 78 items built.** Built means the code is in the project. It does not mean tested: every screen still needs trying on a real phone with real data.
 
 ## Foundation and setup
 
@@ -42,9 +42,12 @@ Change `[ ]` to `[x]` when a feature is done. Updated 30 September 2026.
 - [x] Week view grouped by day
 - [x] Share your timetable with a code; classmates add it in one tap
 - [x] Stop sharing; codes expire after 30 days
+- [x] Several times for one subject in one go, each with its own days and times
+- [x] Days that follow another weekday's timetable (for example a Saturday that follows Monday)
+- [x] Extra classes on any date: tick them from your timetable or add one at a different time
 - [ ] Edit a class
 - [ ] Alternate-week classes (for example lab batches)
-- [ ] Holidays and days off
+- [x] Holidays and days off
 
 ## Today screen
 

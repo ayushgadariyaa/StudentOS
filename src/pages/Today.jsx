@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useQuery } from '../lib/hooks'
 import { attendanceStats, advice } from '../lib/attendance'
-import { isoWeekday, localDate, fmtTime, hm } from '../lib/dates'
+import { DAYS, localDate, fmtTime, hm } from '../lib/dates'
+import { classesOn } from '../lib/schedule'
 import Percent from '../components/Percent'
 import Problem from '../components/Problem'
 import ComingUp from '../components/ComingUp'
@@ -16,9 +17,12 @@ const MARKS = [
 
 export default function Today() {
   const today = localDate()
-  const classes = useQuery(() =>
-    supabase.from('timetable_entries').select('*, subjects(name, color)').eq('day_of_week', isoWeekday()).order('start_time'),
+  // The weekly classes, plus any extra classes added for today.
+  const entries = useQuery(() =>
+    supabase.from('timetable_entries').select('*, subjects(name, color)').or(`on_date.is.null,on_date.eq.${today}`),
   )
+  // Is today a holiday, or a day that follows another weekday's timetable?
+  const special = useQuery(() => supabase.from('calendar_days').select('*').eq('day', today).maybeSingle())
   const marks = useQuery(() => supabase.from('attendance_records').select('*').eq('class_date', today))
   const summary = useQuery(() => supabase.from('attendance_summary').select('*'))
   const profile = useQuery(() =>
@@ -26,7 +30,7 @@ export default function Today() {
   )
   const [error, setError] = useState(null)
 
-  const list = classes.data ?? []
+  const list = classesOn(today, entries.data ?? [], special.data ?? undefined)
   const markFor = (id) => (marks.data ?? []).find((m) => m.timetable_entry_id === id)
   const now = new Date().toTimeString().slice(0, 5)
   const current = list.find((c) => hm(c.start_time) <= now && now < hm(c.end_time))
@@ -66,15 +70,23 @@ export default function Today() {
       <h1 className="text-3xl font-bold">
         {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
       </h1>
-      {!classes.loading && list.length > 0 && (
+      {!entries.loading && list.length > 0 && (
         <p className="mt-1 text-ink/70">
           {list.length} {list.length === 1 ? 'class' : 'classes'} today. {status}
         </p>
       )}
 
-      <Problem error={error ?? classes.error ?? marks.error} />
+      {special.data && (
+        <p className="mt-3 border-l-4 border-pen bg-ink/5 px-3 py-2 text-sm">
+          {special.data.kind === 'holiday'
+            ? `Holiday${special.data.note ? `: ${special.data.note}` : ''}. No weekly classes today.`
+            : `Today follows ${DAYS[special.data.follows_day - 1]}'s timetable${special.data.note ? ` (${special.data.note})` : ''}.`}
+        </p>
+      )}
 
-      {!classes.loading && list.length === 0 && (
+      <Problem error={error ?? entries.error ?? special.error ?? marks.error} />
+
+      {!entries.loading && !special.loading && list.length === 0 && !special.data && (
         <p className="mt-6 border-y border-rule py-4">
           Nothing on your timetable for today.{' '}
           <Link className="font-bold text-pen underline" to="/timetable">Open Timetable</Link> to add classes.
@@ -93,6 +105,7 @@ export default function Today() {
                   </p>
                   <p className="truncate">
                     <span className="font-bold">{c.subjects.name}</span>
+                    {c.on_date && <span className="ml-2 rounded-sm bg-mark-yellow px-1.5 text-sm font-bold">Extra</span>}
                     {[c.room, c.building].filter(Boolean).length > 0 && (
                       <span className="text-ink/70">, {[c.room, c.building].filter(Boolean).join(', ')}</span>
                     )}

@@ -45,3 +45,18 @@ export function dueLabel(days) {
   if (days === 1) return 'Tomorrow'
   return `In ${days} days`
 }
+
+// A date-only string such as "2026-10-03" shown as "Sat, 3 Oct"
+export const fmtDay = (day) => fmtDate(`${day}T00:00`)
+
+// Every date from `from` to `to`, inclusive, as "YYYY-MM-DD" strings. Empty if `to` is before `from`.
+export function datesBetween(from, to) {
+  const out = []
+  if (!from || !to || to < from) return out
+  const d = new Date(`${from}T00:00`)
+  while (localDate(d) <= to && out.length < 400) {
+    out.push(localDate(d))
+    d.setDate(d.getDate() + 1)
+  }
+  return out
+}

@@ -29,6 +29,7 @@ src/
     attendance.js          the attendance maths (tested by attendance.test.js)
     share.js               timetable sharing: make a code, look it up, import it
     dates.js  text.js      small date and wording helpers
+    schedule.js            which classes happen on a date (weekly + special days + extras)
     kinds.js  colors.js    the task types and the subject colour list
     ui.js                  shared Tailwind class names (inputs, buttons)
   components/            small pieces used by several pages
@@ -68,9 +69,13 @@ Cancelled classes are not counted. Run `npm test` to see examples that prove it.
 
 `lib/share.js` (the logic) and `components/TimetableShare.jsx` (the screen). Sharing saves a **snapshot** in `timetable_shares` under a random code. A classmate's app fetches it through the database function `get_shared_timetable`, then adds those subjects and classes to **their own** tables. Nothing stays linked. The import code checks every value, because the data came from another person.
 
+## Special days and extra classes
+
+The weekly timetable is a pattern. Real weeks have exceptions, so `lib/schedule.js` combines three things for any date: the weekly classes, a **special day** (a holiday has no weekly classes; a day can also *follow* another weekday's timetable, like a Saturday that follows Monday), and **extra classes** (timetable entries with an `on_date`). `Today.jsx` calls `classesOn(date, entries, special)`. Because attendance is saved per class per date, marking a Monday class on a Saturday just works.
+
 ## The database
 
-`001_initial_schema.sql` creates the tables, the `attendance_summary` view and the RLS rules. `002_v1_additions.sql` adds profile fields, task types and sharing. The `assignments` table from 001 is not used yet: all coursework lives in `tasks`, with a `kind` such as lab manual or tutorial.
+`001_initial_schema.sql` creates the tables, the `attendance_summary` view and the RLS rules. `002_v1_additions.sql` adds profile fields, task types and sharing. `003_calendar_exceptions.sql` adds extra classes (`on_date` on `timetable_entries`) and special days (`calendar_days`). The `assignments` table from 001 is not used yet: all coursework lives in `tasks`, with a `kind` such as lab manual or tutorial.
 
 ## Recipe: add a new page
 
