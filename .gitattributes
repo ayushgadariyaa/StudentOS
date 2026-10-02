@@ -1,0 +1,6 @@
+* text=auto
+*.png binary
+*.jar binary
+# the Android build script must keep Unix line endings
+android/gradlew text eol=lf
+*.bat text eol=crlf

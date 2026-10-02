@@ -54,6 +54,16 @@ Start with [docs/CODE_TOUR.md](docs/CODE_TOUR.md). It explains how the files fit
 - Only the public anon/publishable key belongs in this app. Never use the secret `service_role` key here.
 - Row Level Security (set up in the migrations) is what keeps each student's data private.
 
+## Android app (APK)
+
+The Android app is a thin native shell (made with [Capacitor](https://capacitorjs.com)) that opens the live website. Every Vercel deploy updates the app, so you only rebuild the APK if you change `android/` or `capacitor.config.json`. It has its own icon and isn't tied to a browser.
+
+1. Push to GitHub. The **Build Android app** workflow (Actions tab) builds `app-debug.apk` in the cloud. You can also start it by hand: Actions, Build Android app, Run workflow.
+2. Open the finished run, download `student-os-apk` under Artifacts, and unzip it to get `app-debug.apk`.
+3. Send the APK to your phone and open it. Android asks you to allow installs from that source.
+
+The website address is set in `capacitor.config.json` (`server.url`). The app is Android only. iPhone users use the website: Safari, Share, Add to Home Screen.
+
 ## Deploy on Vercel
 
 Import the repository, add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` under Environment Variables, and deploy.

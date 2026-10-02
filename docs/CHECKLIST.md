@@ -2,7 +2,7 @@
 
 Change `[ ]` to `[x]` when a feature is done. Updated 30 September 2026.
 
-**36 of 78 items built.** Built means the code is in the project. It does not mean tested: every screen still needs trying on a real phone with real data.
+**37 of 80 items built.** Built means the code is in the project. It does not mean tested: every screen still needs trying on a real phone with real data.
 
 ## Foundation and setup
 
@@ -14,6 +14,7 @@ Change `[ ]` to `[x]` when a feature is done. Updated 30 September 2026.
 - [x] Deploy to Vercel
 - [ ] Share the link with friends and watch how they use it
 - [x] Installable on the home screen (PWA: icon and install prompt)
+- [x] Android app: a native shell that opens the live site, built as an APK in the cloud
 - [ ] Faster first load (split the code into smaller chunks)
 
 ## Accounts and profile
@@ -93,6 +94,7 @@ Change `[ ]` to `[x]` when a feature is done. Updated 30 September 2026.
 
 ## Before you share V1 with friends
 
+- [ ] Install the APK on a real phone and test it
 - [ ] Run migration 002 in Supabase
 - [ ] Try every screen on a real phone, on Wi-Fi and on mobile data
 - [ ] Decide how to handle networks that block supabase.co (route requests through your own domain)

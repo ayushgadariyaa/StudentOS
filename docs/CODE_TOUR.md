@@ -35,6 +35,9 @@ src/
   components/            small pieces used by several pages
   pages/                 one file per screen
 supabase/migrations/     the database, as numbered SQL files
+android/  www/           the Android app shell (Capacitor); www/ is only a fallback page
+capacitor.config.json    the app name, id, and the website address it opens
+.github/workflows/       builds the APK in the cloud
 docs/                    this tour and the checklist
 ```
 

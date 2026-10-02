@@ -1,0 +1,12 @@
+{
+  "appId": "com.studentos.app",
+  "appName": "Student OS",
+  "webDir": "www",
+  "server": {
+    "url": "https://student-os-ruby.vercel.app",
+    "errorPath": "error.html"
+  },
+  "plugins": {
+    "SystemBars": { "style": "LIGHT" }
+  }
+}
