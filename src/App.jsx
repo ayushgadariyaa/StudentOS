@@ -79,7 +79,7 @@ export default function App() {
         </aside>
 
         <div className="min-w-0 flex-1">
-          <header className="flex items-center justify-between border-b border-rule px-4 py-2 md:hidden">
+          <header className="flex items-center justify-between border-b border-rule px-4 pb-2 pt-[calc(env(safe-area-inset-top)+0.5rem)] md:hidden">
             <span className="font-slab text-xl font-bold">Student OS</span>
             <nav className="flex">
               {NAV.filter((n) => !n.tab).map((n) => (
