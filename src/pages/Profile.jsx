@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useQuery } from '../lib/hooks'
+import { normBatch, isValidBatch, BATCH_HELP } from '../lib/batch'
 import { field, btn, btnQuiet } from '../lib/ui'
 import Field from '../components/Field'
 import Problem from '../components/Problem'
 
-const FIELDS = ['full_name', 'roll_number', 'college', 'department', 'semester', 'division']
+const FIELDS = ['full_name', 'roll_number', 'college', 'department', 'semester', 'division', 'batch']
 
 export default function Profile({ user }) {
   const profile = useQuery(() => supabase.from('profiles').select('*').maybeSingle())
@@ -27,10 +28,13 @@ function ProfileForm({ user, initial, loadError }) {
   async function save(e) {
     e.preventDefault()
     const values = Object.fromEntries(FIELDS.map((k) => [k, form[k].trim() || null]))
+    values.batch = normBatch(form.batch) || null // stored in capitals without spaces, so "b 2" and "B2" match
+    if (values.batch && !isValidBatch(values.batch)) return setError({ message: BATCH_HELP })
     // upsert = update the row, or create it if it is somehow missing
     const { error } = await supabase.from('profiles').upsert({ id: user.id, ...values })
     setError(error)
     setSaved(!error)
+    if (!error) setForm((f) => ({ ...f, batch: values.batch ?? '' }))
   }
 
   return (
@@ -54,8 +58,11 @@ function ProfileForm({ user, initial, loadError }) {
         <Field label="Semester or year" htmlFor="semester">
           <input id="semester" className={field} value={form.semester} onChange={set('semester')} placeholder="Semester 5" />
         </Field>
-        <Field label="Division or batch" htmlFor="division" hint="When you share your timetable, only your name, department, semester and division go with it.">
+        <Field label="Division" htmlFor="division" hint="When you share your timetable, only your name, department, semester and division go with it.">
           <input id="division" className={field} value={form.division} onChange={set('division')} placeholder="A" />
+        </Field>
+        <Field label="Lab batch" htmlFor="batch" hint="For example B2. Today hides labs meant for other batches. Leave it empty to see every class.">
+          <input id="batch" maxLength={20} className={field} value={form.batch} onChange={set('batch')} placeholder="B1" />
         </Field>
         <div className="flex items-center gap-3 sm:col-span-2">
           <button className={btn}>Save profile</button>

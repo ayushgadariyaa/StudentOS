@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom'
 import { supabase, configured } from './lib/supabase'
+import { useUpdateAvailable, refreshApp } from './lib/useUpdateCheck'
 import Login from './pages/Login'
 import Today from './pages/Today'
 import Timetable from './pages/Timetable'
@@ -32,6 +33,7 @@ const Screen = ({ children }) => <div className="grid min-h-screen place-items-c
 
 export default function App() {
   const [session, setSession] = useState(undefined) // undefined = still checking who is signed in
+  const stale = useUpdateAvailable() // true when a newer version of the app has been deployed
 
   useEffect(() => {
     if (!configured) return
@@ -89,6 +91,11 @@ export default function App() {
               ))}
             </nav>
           </header>
+          {stale && (
+            <button onClick={refreshApp} className="block w-full bg-pen px-4 py-2 text-center text-sm font-bold text-white">
+              A new version is ready. Tap to update.
+            </button>
+          )}
           <main className="px-4 pb-28 pt-6 md:px-0 md:pb-12">
             <Routes>
               <Route path="/" element={<Today />} />

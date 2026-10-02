@@ -5,6 +5,8 @@ import { useQuery } from '../lib/hooks'
 import { attendanceStats, advice } from '../lib/attendance'
 import { DAYS, localDate, fmtTime, hm } from '../lib/dates'
 import { classesOn } from '../lib/schedule'
+import { plural } from '../lib/text'
+import BatchTag from '../components/BatchTag'
 import Percent from '../components/Percent'
 import Problem from '../components/Problem'
 import ComingUp from '../components/ComingUp'
@@ -26,11 +28,15 @@ export default function Today() {
   const marks = useQuery(() => supabase.from('attendance_records').select('*').eq('class_date', today))
   const summary = useQuery(() => supabase.from('attendance_summary').select('*'))
   const profile = useQuery(() =>
-    supabase.from('profiles').select('attendance_target, attendance_warn_margin').maybeSingle(),
+    supabase.from('profiles').select('attendance_target, attendance_warn_margin, batch').maybeSingle(),
   )
   const [error, setError] = useState(null)
 
-  const list = classesOn(today, entries.data ?? [], special.data ?? undefined)
+  // Labs of other batches are left out. Wait for the profile first, so they do not flash on screen and vanish.
+  const myBatch = profile.data?.batch
+  const everything = classesOn(today, entries.data ?? [], special.data ?? undefined)
+  const list = profile.loading ? [] : classesOn(today, entries.data ?? [], special.data ?? undefined, myBatch)
+  const hidden = profile.loading ? 0 : everything.length - list.length
   const markFor = (id) => (marks.data ?? []).find((m) => m.timetable_entry_id === id)
   const now = new Date().toTimeString().slice(0, 5)
   const current = list.find((c) => hm(c.start_time) <= now && now < hm(c.end_time))
@@ -84,9 +90,17 @@ export default function Today() {
         </p>
       )}
 
+      {hidden > 0 && (
+        <p className="mt-3 text-sm text-ink/70">
+          {plural(hidden, 'class', 'classes')} for other lab batches {hidden === 1 ? 'is' : 'are'} hidden. Your batch is{' '}
+          {myBatch}.{' '}
+          <Link className="font-bold text-pen underline" to="/profile">Change it</Link>
+        </p>
+      )}
+
       <Problem error={error ?? entries.error ?? special.error ?? marks.error} />
 
-      {!entries.loading && !special.loading && list.length === 0 && !special.data && (
+      {!entries.loading && !special.loading && !profile.loading && list.length === 0 && !special.data && (
         <p className="mt-6 border-y border-rule py-4">
           Nothing on your timetable for today.{' '}
           <Link className="font-bold text-pen underline" to="/timetable">Open Timetable</Link> to add classes.
@@ -106,6 +120,7 @@ export default function Today() {
                   <p className="truncate">
                     <span className="font-bold">{c.subjects.name}</span>
                     {c.on_date && <span className="ml-2 rounded-sm bg-mark-yellow px-1.5 text-sm font-bold">Extra</span>}
+                    <BatchTag batch={c.batch} />
                     {[c.room, c.building].filter(Boolean).length > 0 && (
                       <span className="text-ink/70">, {[c.room, c.building].filter(Boolean).join(', ')}</span>
                     )}

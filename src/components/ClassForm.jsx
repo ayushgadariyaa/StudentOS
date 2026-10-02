@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { toMinutes, addMinutes } from '../lib/dates'
+import { normBatch, isValidBatch, BATCH_HELP } from '../lib/batch'
 import { field, btn, btnQuiet } from '../lib/ui'
 import DayChips from './DayChips'
 import Field from './Field'
@@ -16,6 +17,7 @@ export default function ClassForm({ subjects, onAdded }) {
   const [subjectId, setSubjectId] = useState('')
   const [professor, setProfessor] = useState('')
   const [building, setBuilding] = useState('')
+  const [batch, setBatch] = useState('') // for labs: the one batch that attends. Empty = everyone.
   const [slots, setSlots] = useState([newSlot()])
   const [error, setError] = useState(null)
 
@@ -37,6 +39,8 @@ export default function ClassForm({ subjects, onAdded }) {
       if (s.days.length === 0) return setError({ message: `${where}pick at least one day.` })
       if (s.end <= s.start) return setError({ message: `${where}the end time has to be after the start time.` })
     }
+    const tag = normBatch(batch)
+    if (tag && !isValidBatch(tag)) return setError({ message: BATCH_HELP })
     // One row for every day of every time, all sent in a single request.
     const rows = slots.flatMap((s) =>
       s.days.map((day) => ({
@@ -47,6 +51,7 @@ export default function ClassForm({ subjects, onAdded }) {
         room: s.room.trim() || null,
         building: building.trim() || null,
         professor: professor.trim() || null,
+        batch: tag || null,
       })),
     )
     const { error } = await supabase.from('timetable_entries').insert(rows)
@@ -58,6 +63,7 @@ export default function ClassForm({ subjects, onAdded }) {
     setSubjectId('')
     setProfessor('')
     setBuilding('')
+    setBatch('') // cleared on purpose, so the next lecture is not tagged by accident
     setSlots([newSlot({ days: last.days, start: last.end, end: addMinutes(last.end, minutesLong(last)) })])
     onAdded(rows.length)
   }
@@ -110,6 +116,14 @@ export default function ClassForm({ subjects, onAdded }) {
         </Field>
         <Field label="Building (optional)" htmlFor="building">
           <input id="building" className={field} value={building} onChange={(e) => setBuilding(e.target.value)} />
+        </Field>
+        <Field
+          label="Lab batch (optional)"
+          htmlFor="batch"
+          hint="For a lab that only one batch attends, for example B1. Leave empty for lectures and anything everyone attends."
+          className="sm:col-span-2 sm:max-w-xs"
+        >
+          <input id="batch" maxLength={20} className={field} value={batch} onChange={(e) => setBatch(e.target.value)} placeholder="B1" />
         </Field>
       </div>
 

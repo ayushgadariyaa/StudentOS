@@ -4,7 +4,9 @@ import { supabase } from '../lib/supabase'
 import { useQuery } from '../lib/hooks'
 import { DAYS, fmtTime, isoWeekday } from '../lib/dates'
 import { plural } from '../lib/text'
+import { normBatch, isValidBatch, BATCH_HELP } from '../lib/batch'
 import { btn, btnOutline, btnQuiet } from '../lib/ui'
+import BatchTag from '../components/BatchTag'
 import ClassForm from '../components/ClassForm'
 import ExtraClasses from '../components/ExtraClasses'
 import Problem from '../components/Problem'
@@ -42,6 +44,16 @@ export default function Timetable() {
 
   async function remove(id) {
     const { error } = await supabase.from('timetable_entries').delete().eq('id', id)
+    setError(error)
+    if (!error) entries.reload()
+  }
+
+  // Edit mode: set or change the batch of a class you already added. Empty = for everyone.
+  async function setBatchOf(row, value) {
+    const batch = normBatch(value) || null
+    if (batch === (row.batch ?? null)) return
+    if (batch && !isValidBatch(batch)) return setError({ message: BATCH_HELP })
+    const { error } = await supabase.from('timetable_entries').update({ batch }).eq('id', row.id)
     setError(error)
     if (!error) entries.reload()
   }
@@ -126,6 +138,13 @@ export default function Timetable() {
 
       <Problem error={error ?? entries.error ?? subjects.error} />
 
+      {editing && (
+        <p className="mt-3 text-sm text-ink/70">
+          To make a lab belong to one batch, type the batch (for example B1) in the box next to it. Leave the box empty
+          for lectures.
+        </p>
+      )}
+
       {!entries.loading && weekly.length === 0 && (
         <p className="mt-6 border-y border-rule py-4">
           No classes yet. Tap Add class to start, or use Share or import to copy a classmate's timetable.
@@ -151,13 +170,25 @@ export default function Timetable() {
                     </p>
                     <p className="truncate">
                       <span className="font-bold">{r.subjects.name}</span>
+                      <BatchTag batch={r.batch} />
                       {place(r) && <span className="text-ink/70">, {place(r)}</span>}
                     </p>
                   </div>
                   {editing && (
-                    <button className={btnQuiet} onClick={() => remove(r.id)}>
-                      Remove
-                    </button>
+                    <>
+                      <input
+                        key={`${r.id}-${r.batch ?? ''}`}
+                        aria-label={`Lab batch for ${r.subjects.name}`}
+                        className="w-20 rounded-md border border-rule bg-white px-2 py-1 text-sm text-ink outline-none focus:border-pen"
+                        defaultValue={r.batch ?? ''}
+                        maxLength={20}
+                        placeholder="Batch"
+                        onBlur={(e) => setBatchOf(r, e.target.value)}
+                      />
+                      <button className={btnQuiet} onClick={() => remove(r.id)}>
+                        Remove
+                      </button>
+                    </>
                   )}
                 </li>
               ))}
