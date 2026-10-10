@@ -174,7 +174,8 @@ export default function Timetable() {
                       {place(r) && <span className="text-ink/70">, {place(r)}</span>}
                     </p>
                   </div>
-                  {editing && (
+                  {editing && r.source_id && <span className="text-sm text-ink/70">From your class</span>}
+                  {editing && !r.source_id && (
                     <>
                       <input
                         key={`${r.id}-${r.batch ?? ''}`}

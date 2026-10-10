@@ -2,7 +2,7 @@
 
 Change `[ ]` to `[x]` when a feature is done. Updated 30 September 2026.
 
-**37 of 80 items built.** Built means the code is in the project. It does not mean tested: every screen still needs trying on a real phone with real data.
+**46 of 95 items built.** Built means the code is in the project. It does not mean tested: every screen still needs trying on a real phone with real data.
 
 ## Foundation and setup
 
@@ -85,6 +85,24 @@ Change `[ ]` to `[x]` when a feature is done. Updated 30 September 2026.
 - [x] Past exams kept separately
 - [ ] Edit an exam
 - [ ] Topic checklist for each exam
+
+## Classes (CR groups)
+
+- [x] Create a class as CR and join with a code
+- [x] Several admins: CR and deputy CR (only the creator can remove another admin)
+- [x] Admins send classes, extra classes, holidays and Saturday changes to the class
+- [x] Admins send tasks (submissions) and exams to the class
+- [x] Cancelled classes: tell the whole class in one tap; they show as Cancelled and do not count
+- [x] Lab batches respected: members only receive their own batch's labs
+- [x] Notices from the admins
+- [x] Attendance stays private: admins see names, roll numbers and batches only
+- [x] Database tests on a real PostgreSQL engine (npm run test:db)
+- [ ] Edit an item you already sent instead of removing and re-adding it
+- [ ] Rename or delete a class
+- [ ] Batch-specific tasks and exams
+- [ ] Join by link instead of typing a code
+- [ ] A change log: what the class changed and when
+- [ ] Phone notifications for class updates (needs notifications)
 
 ## Reminders and notifications
 

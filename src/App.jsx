@@ -10,6 +10,8 @@ import Tasks from './pages/Tasks'
 import Exams from './pages/Exams'
 import Subjects from './pages/Subjects'
 import Profile from './pages/Profile'
+import Classes from './pages/Classes'
+import { useClassSync } from './lib/classes'
 
 // One list drives every menu. `tab: true` puts an item in the phone's bottom bar, the others become
 // small links at the top of the phone screen. On a computer everything is in the side menu.
@@ -20,6 +22,7 @@ const NAV = [
   { to: '/attendance', label: 'Attendance', tab: true },
   { to: '/tasks', label: 'Tasks', tab: true },
   { to: '/exams', label: 'Exams', tab: true },
+  { to: '/class', label: 'Class' },
   { to: '/subjects', label: 'Subjects' },
   { to: '/profile', label: 'Profile' },
 ]
@@ -49,6 +52,10 @@ export default function App() {
       supabase.from('profiles').upsert({ id: userId }, { onConflict: 'id', ignoreDuplicates: true }).then(() => {})
     }
   }, [userId])
+
+  // Copies what your class has sent onto your own screens. The number goes up when something changed,
+  // and a new key makes the pages load again.
+  const syncVersion = useClassSync(userId)
 
   if (!configured) {
     return (
@@ -97,12 +104,13 @@ export default function App() {
             </button>
           )}
           <main className="px-4 pb-28 pt-6 md:px-0 md:pb-12">
-            <Routes>
+            <Routes key={syncVersion}>
               <Route path="/" element={<Today />} />
               <Route path="/timetable" element={<Timetable />} />
               <Route path="/attendance" element={<Attendance user={session.user} />} />
               <Route path="/tasks" element={<Tasks />} />
               <Route path="/exams" element={<Exams />} />
+              <Route path="/class" element={<Classes userId={session.user.id} />} />
               <Route path="/subjects" element={<Subjects />} />
               <Route path="/profile" element={<Profile user={session.user} />} />
               <Route path="*" element={<Navigate to="/" replace />} />

@@ -6,6 +6,8 @@ import { field, btn, btnQuiet } from '../lib/ui'
 import DayChips from './DayChips'
 import Field from './Field'
 import Problem from './Problem'
+import { useSendToClass } from './SendToClass'
+import { withClass } from '../lib/classes'
 
 let nextId = 1
 const newSlot = (patch = {}) => ({ id: nextId++, days: [], start: '09:00', end: '10:00', room: '', ...patch })
@@ -18,6 +20,7 @@ export default function ClassForm({ subjects, onAdded }) {
   const [professor, setProfessor] = useState('')
   const [building, setBuilding] = useState('')
   const [batch, setBatch] = useState('') // for labs: the one batch that attends. Empty = everyone.
+  const send = useSendToClass(true) // class admins: also send these classes to the class
   const [slots, setSlots] = useState([newSlot()])
   const [error, setError] = useState(null)
 
@@ -43,7 +46,7 @@ export default function ClassForm({ subjects, onAdded }) {
     if (tag && !isValidBatch(tag)) return setError({ message: BATCH_HELP })
     // One row for every day of every time, all sent in a single request.
     const rows = slots.flatMap((s) =>
-      s.days.map((day) => ({
+      s.days.map((day) => withClass({
         subject_id: subjectId,
         day_of_week: day,
         start_time: s.start,
@@ -52,7 +55,7 @@ export default function ClassForm({ subjects, onAdded }) {
         building: building.trim() || null,
         professor: professor.trim() || null,
         batch: tag || null,
-      })),
+      }, send.classId)),
     )
     const { error } = await supabase.from('timetable_entries').insert(rows)
     setError(error)
@@ -127,6 +130,7 @@ export default function ClassForm({ subjects, onAdded }) {
         </Field>
       </div>
 
+      {send.control}
       <Problem error={error} />
       <div>
         <button className={btn}>Add class</button>

@@ -6,6 +6,8 @@ import { field, btn, btnQuiet } from '../lib/ui'
 import BatchTag from './BatchTag'
 import Field from './Field'
 import Problem from './Problem'
+import { useSendToClass } from './SendToClass'
+import { withClass } from '../lib/classes'
 
 const EMPTY_CUSTOM = { subject_id: '', start: '09:00', end: '10:00', room: '', batch: '' }
 
@@ -17,6 +19,7 @@ export default function ExtraClasses({ subjects, weekly, extras, onChanged }) {
   const [picked, setPicked] = useState(new Set()) // ids of the weekly classes that are ticked
   const [custom, setCustom] = useState(EMPTY_CUSTOM)
   const [error, setError] = useState(null)
+  const send = useSendToClass(true) // class admins: also send these extra classes to the class
 
   const weekdayOf = (d) => isoWeekday(new Date(`${d}T00:00`))
   const same = (a, b) =>
@@ -35,7 +38,7 @@ export default function ExtraClasses({ subjects, weekly, extras, onChanged }) {
   async function save(rows, afterSaving) {
     const fresh = rows.filter((r) => !extras.some((x) => same(x, r))) // never add the same class twice
     if (fresh.length === 0) return setError({ message: 'Those classes are already on that date.' })
-    const { error } = await supabase.from('timetable_entries').insert(fresh)
+    const { error } = await supabase.from('timetable_entries').insert(fresh.map((r) => withClass(r, send.classId)))
     setError(error)
     if (error) return
     afterSaving()
@@ -100,6 +103,8 @@ export default function ExtraClasses({ subjects, weekly, extras, onChanged }) {
       <Field label="Date" htmlFor="extra-date" className="mt-3 max-w-xs">
         <input id="extra-date" type="date" className={field} value={date} onChange={(e) => setDate(e.target.value)} />
       </Field>
+
+      {send.control && <div className="mt-3">{send.control}</div>}
 
       <p className="mt-4 font-bold">Pick from your timetable</p>
       {weekly.length === 0 ? (
@@ -171,9 +176,13 @@ export default function ExtraClasses({ subjects, weekly, extras, onChanged }) {
                 {fmtDay(x.on_date)}, {fmtTime(x.start_time)} to {fmtTime(x.end_time)}
               </p>
             </div>
-            <button className={btnQuiet} onClick={() => remove(x.id)}>
-              Remove
-            </button>
+            {x.source_id ? (
+              <span className="text-sm text-ink/70">From your class</span>
+            ) : (
+              <button className={btnQuiet} onClick={() => remove(x.id)}>
+                Remove
+              </button>
+            )}
           </li>
         ))}
       </ul>

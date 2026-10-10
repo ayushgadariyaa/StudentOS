@@ -7,6 +7,8 @@ import { field, btn, btnQuiet } from '../lib/ui'
 import Field from '../components/Field'
 import Mark from '../components/Mark'
 import Problem from '../components/Problem'
+import { useSendToClass } from '../components/SendToClass'
+import { withClass } from '../lib/classes'
 
 const STEPS = [0, 25, 50, 75, 100] // how prepared the student is, in percent
 const EMPTY = { subject_id: '', title: '', date: '', time: '10:00', location: '' }
@@ -17,16 +19,17 @@ export default function Exams() {
   const subjects = useQuery(() => supabase.from('subjects').select('id, name').eq('archived', false).order('name'))
   const [form, setForm] = useState(EMPTY)
   const [error, setError] = useState(null)
+  const send = useSendToClass(true) // class admins: also send this exam to the class
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value })
 
   async function add(e) {
     e.preventDefault()
-    const { error } = await supabase.from('exams').insert({
+    const { error } = await supabase.from('exams').insert(withClass({
       subject_id: form.subject_id,
       title: form.title.trim() || null,
       exam_at: new Date(`${form.date}T${form.time}`).toISOString(),
       location: form.location.trim() || null,
-    })
+    }, send.classId))
     setError(error)
     if (error) return
     setForm(EMPTY)
@@ -92,6 +95,7 @@ export default function Exams() {
             <Field label="Room or hall (optional)" htmlFor="location" className="sm:col-span-2">
               <input id="location" className={field} value={form.location} onChange={set('location')} />
             </Field>
+            {send.control && <div className="sm:col-span-2">{send.control}</div>}
             <div className="sm:col-span-2">
               <button className={btn}>Add exam</button>
             </div>
@@ -121,9 +125,11 @@ export default function Exams() {
                   </p>
                 </div>
                 <Mark tone={tone(days)} className="shrink-0 text-sm">{dueLabel(days)}</Mark>
-                <button className={btnQuiet} onClick={() => remove(x)}>
-                  Remove
-                </button>
+                {!x.source_id && (
+                  <button className={btnQuiet} onClick={() => remove(x)}>
+                    Remove
+                  </button>
+                )}
               </div>
 
               <div className="mt-3">
@@ -167,9 +173,11 @@ export default function Exams() {
                   </p>
                   <p className="text-sm text-ink/70">{fmtDate(x.exam_at)}</p>
                 </div>
-                <button className={btnQuiet} onClick={() => remove(x)}>
-                  Remove
-                </button>
+                {!x.source_id && (
+                  <button className={btnQuiet} onClick={() => remove(x)}>
+                    Remove
+                  </button>
+                )}
               </li>
             ))}
           </ul>

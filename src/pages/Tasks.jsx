@@ -8,6 +8,8 @@ import { field, btn, btnQuiet } from '../lib/ui'
 import Field from '../components/Field'
 import Mark from '../components/Mark'
 import Problem from '../components/Problem'
+import { useSendToClass } from '../components/SendToClass'
+import { withClass } from '../lib/classes'
 
 // One list for all coursework (assignments, lab manuals, tutorials...) and personal to-dos.
 // A personal to-do is just a task of kind "Other" with no subject.
@@ -18,6 +20,7 @@ export default function Tasks() {
   const subjects = useQuery(() => supabase.from('subjects').select('id, name').eq('archived', false).order('name'))
   const [form, setForm] = useState(EMPTY)
   const [filter, setFilter] = useState('all')
+  const send = useSendToClass(false) // class admins: also send a task (a submission) to the class. Off at first, tasks can be personal.
   const [error, setError] = useState(null)
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value })
 
@@ -25,14 +28,14 @@ export default function Tasks() {
     e.preventDefault()
     // A date with no time means "end of that day", so the task isn't overdue until the day is over.
     const deadline = form.date ? new Date(`${form.date}T${form.time || '23:59'}`).toISOString() : null
-    const { error } = await supabase.from('tasks').insert({
+    const { error } = await supabase.from('tasks').insert(withClass({
       kind: form.kind,
       title: form.title.trim(),
       subject_id: form.subject_id || null,
       deadline,
       priority: form.priority,
       description: form.description.trim() || null,
-    })
+    }, send.classId))
     setError(error)
     if (error) return
     setForm({ ...EMPTY, kind: form.kind }) // keep the type: lab manuals and tutorials often come in batches
@@ -103,6 +106,7 @@ export default function Tasks() {
           <Field label="Notes (optional)" htmlFor="description" className="sm:col-span-2">
             <textarea id="description" rows="2" className={field} value={form.description} onChange={set('description')} />
           </Field>
+          {send.control && <div className="sm:col-span-2">{send.control}</div>}
           <div className="sm:col-span-2">
             <button className={btn}>Add task</button>
           </div>
@@ -174,6 +178,7 @@ function TaskRow({ task, onToggle, onRemove }) {
           {kindLabel(task.kind)}
           {task.subjects && `, ${task.subjects.name}`}
           {task.priority === 'high' && ', high priority'}
+          {task.source_id && ', from your class'}
         </p>
         {task.deadline && (
           <p className="mt-1 text-sm">
@@ -183,9 +188,11 @@ function TaskRow({ task, onToggle, onRemove }) {
         )}
         {task.description && <p className="mt-1 text-sm">{task.description}</p>}
       </div>
-      <button className={btnQuiet} onClick={() => onRemove(task)}>
-        Remove
-      </button>
+      {!task.source_id && (
+        <button className={btnQuiet} onClick={() => onRemove(task)}>
+          Remove
+        </button>
+      )}
     </li>
   )
 }

@@ -18,6 +18,10 @@ purpose, so every account is a student for now.
 
 What is done and what is next: [docs/CHECKLIST.md](docs/CHECKLIST.md)
 
+## Classes (for CRs)
+
+A CR creates a class on the **Class** tab and shares the code. Classmates join with it. When a class admin (the CR or a deputy CR) adds a class, holiday, task or exam and ticks "Also send to <class>", it appears on everyone's own screens, filtered by lab batch. Cancelling a class on Today can be sent to the whole class in one tap. Attendance is never shared.
+
 ## Run it on your computer
 
 1. Install [Node.js](https://nodejs.org) 20.19 or newer.
@@ -41,6 +45,7 @@ Never edit a migration that has already been run. A database change means a new 
 | --- | --- |
 | `npm run dev` | Starts the app with live reload |
 | `npm test` | Runs the tests for the attendance maths |
+| `npm run test:db` | Runs the database tests (classes) on a real PostgreSQL engine, no Supabase needed |
 | `npm run build` | Makes the production version in `dist/` |
 | `npm run preview` | Serves that production build locally |
 

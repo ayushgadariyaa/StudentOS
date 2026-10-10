@@ -9,6 +9,7 @@ import { plural } from '../lib/text'
 import BatchTag from '../components/BatchTag'
 import Percent from '../components/Percent'
 import Problem from '../components/Problem'
+import ClassNotices from '../components/ClassNotices'
 import ComingUp from '../components/ComingUp'
 
 const MARKS = [
@@ -44,6 +45,7 @@ export default function Today() {
 
   async function mark(entry, status) {
     const existing = markFor(entry.id)
+    const undoing = existing?.status === status
     const table = supabase.from('attendance_records')
     const { error } =
       existing?.status === status
@@ -56,6 +58,20 @@ export default function Today() {
     if (!error) {
       marks.reload()
       summary.reload()
+      // An admin who cancels a class they send to their class can tell everyone in one tap.
+      if (status === 'cancelled' && entry.publish_class_id && !entry.source_id) tellClass(entry, undoing)
+    }
+  }
+
+  async function tellClass(entry, undoing) {
+    if (undoing) {
+      // taking the cancellation back also takes it back for the class
+      await supabase.from('class_cancellations').delete().eq('entry_id', entry.id).eq('class_date', today)
+    } else if (confirm(`Tell your class that ${entry.subjects.name} is cancelled today?`)) {
+      const { error } = await supabase
+        .from('class_cancellations')
+        .upsert({ class_id: entry.publish_class_id, entry_id: entry.id, class_date: today }, { onConflict: 'entry_id,class_date', ignoreDuplicates: true })
+      setError(error)
     }
   }
 
@@ -147,6 +163,8 @@ export default function Today() {
           )
         })}
       </ul>
+
+      <ClassNotices sinceDays={7} limit={3} title="From your class" />
 
       <ComingUp />
 

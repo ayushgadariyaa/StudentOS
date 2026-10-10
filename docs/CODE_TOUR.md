@@ -76,6 +76,16 @@ Cancelled classes are not counted. Run `npm test` to see examples that prove it.
 
 The weekly timetable is a pattern. Real weeks have exceptions, so `lib/schedule.js` combines three things for any date: the weekly classes, a **special day** (a holiday has no weekly classes; a day can also *follow* another weekday's timetable, like a Saturday that follows Monday), and **extra classes** (timetable entries with an `on_date`). `Today.jsx` calls `classesOn(date, entries, special)`. Because attendance is saved per class per date, marking a Monday class on a Saturday just works.
 
+## Classes and the sync
+
+A class is a group with admins (the CR, a deputy CR) and members, set up in `supabase/migrations/005_classes.sql`. The idea is simple: **an admin's rows are the class's content.** When an admin adds a class, holiday, task or exam and ticks "Also send to my class", the row gets `publish_class_id`. Every member's app then calls the database function `sync_my_classes()`, which copies those rows into the member's **own** tables (the copy has `source_id` pointing back), removes copies that were deleted, and marks cancelled classes. That is why Today, Timetable, Tasks and Attendance did not need to change much.
+
+- `lib/classes.js`: `useMyClasses`, `syncMyClasses`, `useClassSync` (runs the sync when the app opens, every 5 minutes and when you return to the tab) and `withClass`
+- `components/SendToClass.jsx`: the "Also send to my class" tick box; it only appears for admins
+- `pages/Classes.jsx`, `components/ClassAdmin.jsx`, `components/ClassNotices.jsx`: the Class tab
+- Privacy rules: members never read other people's rows; every cross-person step runs inside database functions that check who is asking
+- `supabase/tests/classes.mjs`: tests for all of this on a real PostgreSQL engine. Read them to see the rules in action.
+
 ## The database
 
 `001_initial_schema.sql` creates the tables, the `attendance_summary` view and the RLS rules. `002_v1_additions.sql` adds profile fields, task types and sharing. `003_calendar_exceptions.sql` adds extra classes (`on_date` on `timetable_entries`) and special days (`calendar_days`). The `assignments` table from 001 is not used yet: all coursework lives in `tasks`, with a `kind` such as lab manual or tutorial.

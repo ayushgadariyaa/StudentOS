@@ -5,6 +5,8 @@ import { DAYS, datesBetween, fmtDay, localDate } from '../lib/dates'
 import { field, btn, btnQuiet } from '../lib/ui'
 import Field from './Field'
 import Problem from './Problem'
+import { useSendToClass } from './SendToClass'
+import { withClass } from '../lib/classes'
 
 // Special days: a holiday (no weekly classes) or a day that follows another weekday's timetable
 // (for example "this Saturday follows Monday"). Stored in calendar_days, one row per date.
@@ -13,6 +15,7 @@ export default function SpecialDays() {
   const days = useQuery(() => supabase.from('calendar_days').select('*').gte('day', today).order('day'))
   const [form, setForm] = useState({ kind: 'follows', from: '', to: '', follows: '1', note: '' })
   const [error, setError] = useState(null)
+  const send = useSendToClass(true) // class admins: also send these days to the class
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value })
 
   async function add(e) {
@@ -21,12 +24,17 @@ export default function SpecialDays() {
     const dates = datesBetween(form.from, last)
     if (dates.length === 0) return setError({ message: 'The last day has to be on or after the first day.' })
     if (dates.length > 60) return setError({ message: 'Please add at most 60 days at a time.' })
-    const rows = dates.map((day) => ({
-      day,
-      kind: form.kind,
-      follows_day: form.kind === 'follows' ? Number(form.follows) : null,
-      note: form.note.trim() || null,
-    }))
+    const rows = dates.map((day) =>
+      withClass(
+        {
+          day,
+          kind: form.kind,
+          follows_day: form.kind === 'follows' ? Number(form.follows) : null,
+          note: form.note.trim() || null,
+        },
+        send.classId,
+      ),
+    )
     // upsert: a date that already has a special day is replaced
     const { error } = await supabase.from('calendar_days').upsert(rows, { onConflict: 'user_id,day' })
     setError(error)
@@ -74,6 +82,7 @@ export default function SpecialDays() {
         <Field label="Note (optional)" htmlFor="sd-note" className="sm:col-span-2">
           <input id="sd-note" className={field} value={form.note} onChange={set('note')} placeholder="Diwali break" />
         </Field>
+        {send.control && <div className="sm:col-span-2">{send.control}</div>}
         <div className="sm:col-span-2">
           <button className={btn}>Save</button>
         </div>
@@ -91,9 +100,13 @@ export default function SpecialDays() {
                 {d.note && `, ${d.note}`}
               </p>
             </div>
-            <button className={btnQuiet} onClick={() => remove(d.id)}>
-              Remove
-            </button>
+            {d.source_id ? (
+              <span className="text-sm text-ink/70">From your class</span>
+            ) : (
+              <button className={btnQuiet} onClick={() => remove(d.id)}>
+                Remove
+              </button>
+            )}
           </li>
         ))}
       </ul>

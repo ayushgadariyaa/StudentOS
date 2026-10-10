@@ -6,6 +6,7 @@ import { normBatch, isValidBatch, BATCH_HELP } from '../lib/batch'
 import { field, btn, btnQuiet } from '../lib/ui'
 import Field from '../components/Field'
 import Problem from '../components/Problem'
+import { syncMyClasses } from '../lib/classes'
 
 const FIELDS = ['full_name', 'roll_number', 'college', 'department', 'semester', 'division', 'batch']
 
@@ -34,7 +35,10 @@ function ProfileForm({ user, initial, loadError }) {
     const { error } = await supabase.from('profiles').upsert({ id: user.id, ...values })
     setError(error)
     setSaved(!error)
-    if (!error) setForm((f) => ({ ...f, batch: values.batch ?? '' }))
+    if (!error) {
+      setForm((f) => ({ ...f, batch: values.batch ?? '' }))
+      syncMyClasses() // a new batch changes which lab classes arrive from your class
+    }
   }
 
   return (
